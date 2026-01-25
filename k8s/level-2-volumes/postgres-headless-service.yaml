@@ -1,0 +1,15 @@
+# Headless Service for PostgreSQL StatefulSet
+# clusterIP: None means no load balancing - direct pod access
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-headless
+  labels:
+    app: postgres
+spec:
+  clusterIP: None  # This makes it a headless service
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

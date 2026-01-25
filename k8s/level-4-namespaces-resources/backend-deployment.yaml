@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: artisantek/kubecoin-backend:1.0
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: kubecoin-config
+            - secretRef:
+                name: kubecoin-secrets
+          # Resource constraints
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"

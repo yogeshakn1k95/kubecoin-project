@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: artisantek/kubecoin-frontend:1.0
+          ports:
+            - containerPort: 8080
+          # Using individual env var with valueFrom (instead of envFrom)
+          # This demonstrates referencing a specific key from ConfigMap
+          env:
+            - name: BACKEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: kubecoin-config
+                  key: BACKEND_URL
