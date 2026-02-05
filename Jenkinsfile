@@ -15,8 +15,8 @@ pipeline {
             steps {
                 script {
                     if (env.BRANCH_NAME == 'DEV') {
-                        env.ENV = 'dev1'
-                        env.NAMESPACE = 'dev1'
+                        env.ENV = 'dev'
+                        env.NAMESPACE = 'dev'
                     } else if (env.BRANCH_NAME == 'TESTING') {
                         env.ENV = 'testing'
                         env.NAMESPACE = 'testing'
