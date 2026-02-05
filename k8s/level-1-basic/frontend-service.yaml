@@ -11,4 +11,4 @@ spec:
   ports:
     - port: 80
       targetPort: 8080
-      nodePort: 30000  # Access via http://<node-ip>:30000
+      # nodePort: 30000  # Access via http://<node-ip>:30000
