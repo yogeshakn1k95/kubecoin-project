@@ -41,31 +41,57 @@ pipeline {
             }
         }
 
-        stage('Update Deployment File') {
-            steps {
-                // sh """
-                // sed -i 's|image: .*|image: $DOCKER_IMAGE:$DOCKER_TAG|' deployment.yaml
-                // """
-                // sh """
-                // git config user.name "jenkins"
-                // git config user.email "jenkins@test.com"
-                // git add deployment.yaml
-                // git commit -m "Updated image to $DOCKER_TAG"
-                // """
-                sh '''
-                git checkout main
-                git pull origin main
-                
-                git config user.name "jenkins"
-                git config user.email "jenkins@test.com"
-                
-                git add deployment.yaml
-                git commit -m "Updated image to ${DOCKER_TAG}" || echo "No changes to commit"
-                git push origin main || echo "Nothing to push"
-                '''
-                sh "git push origin main"
+            stage('Update Deployment File') {
+                steps {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'github-creds',
+                        usernameVariable: 'GIT_USER',
+                        passwordVariable: 'GIT_PASS'
+                    )]) {
+                        sh '''
+                        git checkout main
+                        git pull origin main
+            
+                        git config user.name "jenkins"
+                        git config user.email "jenkins@test.com"
+            
+                        git add deployment.yaml
+            
+                        if git diff --cached --quiet; then
+                          echo "No changes detected"
+                        else
+                          git commit -m "Updated image to ${DOCKER_TAG}"
+                          git push https://$GIT_USER:$GIT_PASS@github.com/yogeshakn1k95/kubecoin-project.git HEAD:main
+                        fi
+                        '''
+                    }
+                }
             }
-        }
+        // stage('Update Deployment File') {
+        //     steps {
+        //         // sh """
+        //         // sed -i 's|image: .*|image: $DOCKER_IMAGE:$DOCKER_TAG|' deployment.yaml
+        //         // """
+        //         // sh """
+        //         // git config user.name "jenkins"
+        //         // git config user.email "jenkins@test.com"
+        //         // git add deployment.yaml
+        //         // git commit -m "Updated image to $DOCKER_TAG"
+        //         // """
+        //         sh '''
+        //         git checkout main
+        //         git pull origin main
+                
+        //         git config user.name "jenkins"
+        //         git config user.email "jenkins@test.com"
+                
+        //         git add deployment.yaml
+        //         git commit -m "Updated image to ${DOCKER_TAG}" || echo "No changes to commit"
+        //         git push origin main || echo "Nothing to push"
+        //         '''
+        //         sh "git push origin main"
+        //     }
+        // }
 
         stage('Deploy to Kubernetes') {
             steps {
