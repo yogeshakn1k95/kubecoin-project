@@ -1,74 +1,196 @@
-// pipeline
-
 pipeline {
     agent any
 
     environment {
         DOCKER_IMAGE = "yogeshakn1k95/myapp"
-        DOCKER_TAG = "${BUILD_NUMBER}"
+        DOCKER_TAG   = "${BUILD_NUMBER}"
+        GIT_REPO     = "https://github.com/yogeshakn1k95/kubecoin-project.git"
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                checkout scm
+                git branch: 'main',
+                    credentialsId: 'github-creds (kube)',
+                    url: "${GIT_REPO}"
             }
         }
 
         stage('Test') {
             steps {
-                sh 'echo "Run your tests here"'
+                echo "Running tests..."
+                sh 'echo "No tests configured"'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t $DOCKER_IMAGE:$DOCKER_TAG ./backend"
+                sh """
+                    docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ./backend
+                """
             }
         }
 
-        stage('Push Image') {
+        stage('Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds_kube',
-                    usernameVariable: 'USER',
-                    passwordVariable: 'PASS'
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh """
-                    echo $PASS | docker login -u $USER --password-stdin
-                    docker push $DOCKER_IMAGE:$DOCKER_TAG
-                    """
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                    '''
                 }
             }
         }
 
-            stage('Update Deployment File') {
-                steps {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'github-creds (kube)',
-                        usernameVariable: 'GIT_USER',
-                        passwordVariable: 'GIT_PASS'
-                    )]) {
-                        sh '''
-                        git checkout main
-                        git pull origin main
-            
-                        git config user.name "jenkins"
-                        git config user.email "jenkins@test.com"
-            
-                        git add deployment.yaml
-            
-                        if git diff --cached --quiet; then
-                          echo "No changes detected"
-                        else
-                          git commit -m "Updated image to ${DOCKER_TAG}"
-                          git push https://$GIT_USER:$GIT_PASS@github.com/yogeshakn1k95/kubecoin-project.git HEAD:main
-                        fi
-                        '''
-                    }
+        stage('Update Image Tag in deployment.yaml') {
+            steps {
+                sh """
+                    sed -i 's|image: .*|image: ${DOCKER_IMAGE}:${DOCKER_TAG}|' deployment.yaml
+                """
+
+                sh """
+                    git config user.name "jenkins"
+                    git config user.email "jenkins@example.com"
+                    git add deployment.yaml
+                    git diff --cached --quiet || git commit -m "Updated image to ${DOCKER_TAG}"
+                """
+
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-creds (kube)',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_PASS'
+                )]) {
+                    sh '''
+                        git push https://$GIT_USER:$GIT_PASS@github.com/yogeshakn1k95/kubecoin-project.git HEAD:main
+                    '''
                 }
             }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh """
+                    kubectl apply -f deployment.yaml
+                    kubectl apply -f service.yaml
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Pipeline executed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check logs."
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//-------------------------------------------------
+// pipeline
+
+// pipeline {
+//     agent any
+
+//     environment {
+//         DOCKER_IMAGE = "yogeshakn1k95/myapp"
+//         DOCKER_TAG = "${BUILD_NUMBER}"
+//     }
+
+//     stages {
+
+//         stage('Checkout') {
+//             steps {
+//                 checkout scm
+//             }
+//         }
+
+//         stage('Test') {
+//             steps {
+//                 sh 'echo "Run your tests here"'
+//             }
+//         }
+
+//         stage('Build Docker Image') {
+//             steps {
+//                 sh "docker build -t $DOCKER_IMAGE:$DOCKER_TAG ./backend"
+//             }
+//         }
+
+//         stage('Push Image') {
+//             steps {
+//                 withCredentials([usernamePassword(
+//                     credentialsId: 'dockerhub-creds_kube',
+//                     usernameVariable: 'USER',
+//                     passwordVariable: 'PASS'
+//                 )]) {
+//                     sh """
+//                     echo $PASS | docker login -u $USER --password-stdin
+//                     docker push $DOCKER_IMAGE:$DOCKER_TAG
+//                     """
+//                 }
+//             }
+//         }
+
+//             stage('Update Deployment File') {
+//                 steps {
+//                     withCredentials([usernamePassword(
+//                         credentialsId: 'github-creds (kube)',
+//                         usernameVariable: 'GIT_USER',
+//                         passwordVariable: 'GIT_PASS'
+//                     )]) {
+//                         sh '''
+//                         git checkout main
+//                         git pull origin main
+            
+//                         git config user.name "jenkins"
+//                         git config user.email "jenkins@test.com"
+            
+//                         git add deployment.yaml
+            
+//                         if git diff --cached --quiet; then
+//                           echo "No changes detected"
+//                         else
+//                           git commit -m "Updated image to ${DOCKER_TAG}"
+//                           git push https://$GIT_USER:$GIT_PASS@github.com/yogeshakn1k95/kubecoin-project.git HEAD:main
+//                         fi
+//                         '''
+//                     }
+//                 }
+//             }
+        //****************************
         // stage('Update Deployment File') {
         //     steps {
         //         // sh """
@@ -94,15 +216,17 @@ pipeline {
         //         sh "git push origin main"
         //     }
         // }
+        //******************************
 
-        stage('Deploy to Kubernetes') {
-            steps {
-                sh "kubectl apply -f deployment.yaml"
-                sh "kubectl apply -f service.yaml"
-            }
-        }
-    }
-}
+//         stage('Deploy to Kubernetes') {
+//             steps {
+//                 sh "kubectl apply -f deployment.yaml"
+//                 sh "kubectl apply -f service.yaml"
+//             }
+//         }
+//     }
+// }
+//------------------------------------------------------
 
 // pipeline {
 //     agent any
