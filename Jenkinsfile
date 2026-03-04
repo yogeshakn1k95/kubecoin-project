@@ -43,15 +43,26 @@ pipeline {
 
         stage('Update Deployment File') {
             steps {
-                sh """
-                sed -i 's|image: .*|image: $DOCKER_IMAGE:$DOCKER_TAG|' deployment.yaml
-                """
-                sh """
+                // sh """
+                // sed -i 's|image: .*|image: $DOCKER_IMAGE:$DOCKER_TAG|' deployment.yaml
+                // """
+                // sh """
+                // git config user.name "jenkins"
+                // git config user.email "jenkins@test.com"
+                // git add deployment.yaml
+                // git commit -m "Updated image to $DOCKER_TAG"
+                // """
+                sh '''
+                git checkout main
+                git pull origin main
+                
                 git config user.name "jenkins"
                 git config user.email "jenkins@test.com"
+                
                 git add deployment.yaml
-                git commit -m "Updated image to $DOCKER_TAG"
-                """
+                git commit -m "Updated image to ${DOCKER_TAG}"
+                git push origin main
+                '''
                 sh "git push origin main"
             }
         }
