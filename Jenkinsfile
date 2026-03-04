@@ -60,8 +60,8 @@ pipeline {
                 git config user.email "jenkins@test.com"
                 
                 git add deployment.yaml
-                git commit -m "Updated image to ${DOCKER_TAG}"
-                git push origin main
+                git commit -m "Updated image to ${DOCKER_TAG}" || echo "No changes to commit"
+                git push origin main || echo "Nothing to push"
                 '''
                 sh "git push origin main"
             }
