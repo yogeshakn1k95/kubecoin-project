@@ -44,7 +44,7 @@ pipeline {
             stage('Update Deployment File') {
                 steps {
                     withCredentials([usernamePassword(
-                        credentialsId: 'github-creds',
+                        credentialsId: 'github-creds (kube)',
                         usernameVariable: 'GIT_USER',
                         passwordVariable: 'GIT_PASS'
                     )]) {
